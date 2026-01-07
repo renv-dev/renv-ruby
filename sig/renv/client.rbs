@@ -1,4 +1,14 @@
+
 module Renv
-class Client$END$
-end
+  class Client
+    @api_key: string
+    private
+    def http_get:  (path: string, headers: Object) -> Net::HTTPResponse
+    def http_post: (path: string, body: Object, headers: Object) -> Net::HTTPResponse
+    def config:    () -> Types::api_config_response
+
+    public
+    def initialize: (data: { api_key: string }) -> void
+    def load: (branch: string) -> bool
+  end
 end
