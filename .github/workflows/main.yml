@@ -6,6 +6,12 @@ on:
       - main
 
   pull_request:
+    branches:
+      - main
+
+# このワークフローは main への push（マージ含む）で動き、バージョンの自動インクリメントとタグ作成を行います。
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -17,7 +23,7 @@ jobs:
           - '3.1.2'
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Set up Ruby
       uses: ruby/setup-ruby@v1
       with:
@@ -25,3 +31,55 @@ jobs:
         bundler-cache: true
     - name: Run the default task
       run: bundle exec rake
+
+  bump:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    name: Bump patch version and create tag
+    concurrency:
+      group: bump-version
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # avoid using the automatically-provided GITHUB_TOKEN for pushing so that
+          # a push created by this workflow can trigger other workflows (tags pushing)
+          persist-credentials: false
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1.2'
+          bundler-cache: true
+      - name: Install dependencies
+        run: |
+          gem install bundler
+          bundle install --jobs 4 --retry 3
+      - name: Configure git remote with PAT
+        env:
+          ACTIONS_PAT: ${{ secrets.ACTIONS_PAT }}
+        run: |
+          if [ -z "$ACTIONS_PAT" ]; then
+            echo "ERROR: secrets.ACTIONS_PAT is not set" >&2
+            exit 1
+          fi
+          git remote set-url origin https://x-access-token:${ACTIONS_PAT}@github.com/${{ github.repository }}.git
+      - name: Bump patch version, commit and tag
+        env:
+          ACTIONS_PAT: ${{ secrets.ACTIONS_PAT }}
+        run: |
+          set -e
+          # compute new version and update lib/renv/version.rb
+          NEW=$(ruby -e "path='lib/renv/version.rb'; content=File.read(path); current=content[/VERSION\s*=\s*['\"]([^'\"]+)['\"]/,1]; raise 'version not found' unless current; parts=current.split('.').map(&:to_i); parts[2]+=1; new=parts.join('.'); content.sub!(current,new); File.write(path,content); puts new")
+          echo "New version: $NEW"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add lib/renv/version.rb
+          git commit -m "chore(release): bump version to v$NEW"
+          git tag -a "v$NEW" -m "v$NEW"
+
+          # push commit and tag back to origin using PAT (so that tag push triggers publish workflow)
+          git push origin HEAD:main
+          git push origin "v$NEW"

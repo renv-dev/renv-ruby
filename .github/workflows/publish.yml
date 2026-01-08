@@ -1,0 +1,41 @@
+name: Publish gem
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-publish:
+    runs-on: ubuntu-latest
+    name: Test and Publish
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.1.2'
+          bundler-cache: true
+      - name: Install dependencies
+        run: |
+          gem install bundler
+          bundle install --jobs 4 --retry 3
+      - name: Run tests
+        run: bundle exec rake
+      - name: Build gem
+        run: gem build renv.gemspec
+      - name: Setup RubyGems credentials
+        env:
+          RUBYGEMS_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
+        run: |
+          mkdir -p ~/.gem
+          echo "---" > ~/.gem/credentials
+          echo ":rubygems_api_key: $RUBYGEMS_API_KEY" >> ~/.gem/credentials
+          chmod 0600 ~/.gem/credentials
+      - name: Push gem to RubyGems
+        run: gem push renv-*.gem
+
