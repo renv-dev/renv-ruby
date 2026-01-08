@@ -1,14 +1,25 @@
 
 module Renv
+  type load_enum = "main" | "development" | String
+
   class Client
-    @api_key: string
     private
-    def http_get:  (path: string, headers: Object) -> Net::HTTPResponse
-    def http_post: (path: string, body: Object, headers: Object) -> Net::HTTPResponse
-    def config:    () -> Types::api_config_response
+    @api_key:    String
+    @project_id: String
+    @branch:     String
+    @envs:       Hash[String, String]
+
+    def raise_code_error: (response: Net::HTTPResponse, code: String?)          -> void
+    def http_get:  (path: String, headers?: Hash[String, String])               -> Net::HTTPResponse
+    def http_post: (path: String, body: Object, headers?: Hash[String, String]) -> Net::HTTPResponse
+    def config:    ()               -> Types::API::Config::response
+    def branch:    (branch: String) -> Types::API::Branch::response
 
     public
-    def initialize: (data: { api_key: string }) -> void
-    def load: (branch: string) -> bool
+    def initialize: (data: { api_key: String }) -> void
+    def load: (branch: load_enum)               -> void
+    def set:  (key: String, value: String)      -> bool
+    def get:  (key: String)                     -> String?
+    def all:  ()                                -> Hash[String, String]
   end
 end

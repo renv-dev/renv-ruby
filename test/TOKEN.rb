@@ -1,2 +1,2 @@
 # frozen_string_literal: true
-TOKEN="renv_b0965af1ad48aa4fcde1da479699c4fb5c8c22466b3ab8e24096bea6a9cd86da"
+TOKEN="<YOUR_API_KEY>"

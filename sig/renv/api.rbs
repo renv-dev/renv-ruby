@@ -8,21 +8,60 @@ module Renv
       def data: () -> T
     end
 
-    type api_token = {
-        id: String,
-        userId: String,
-        token: String,
-        projectId: String,
-        expiredAt: String,
-        scopes: Array[String],
-        createdAt: String,
-        updatedAt: String
-      }
 
-    type api_config_data = {
-        token: api_token
-      }
 
-    type api_config_response = _Api[api_config_data]
+    module API
+      module Config
+        type api_token = {
+          id:        String,
+          userId:    String,
+          token:     String,
+          projectId: String,
+          expiredAt: String,
+          scopes:    Array[String],
+          createdAt: String,
+          updatedAt: String
+        }
+
+        type api_config_data = {
+          token: api_token
+        }
+
+        type response = _Api[api_config_data]
+      end
+
+      module Branch
+        type branch_data = {
+          id:        String,
+          name:      String,
+          projectId: String,
+          isMain:    bool,
+          createdAt: String,
+          updatedAt: String
+        }
+
+        type api_config_data = {
+          branches: Array[branch_data]
+        }
+
+        type response = _Api[api_config_data]
+      end
+
+      module Env
+        type env_data = {
+          key:      String,
+          value:    String,
+          branchId: String,
+          createdAt: String,
+          updatedAt: String
+        }
+
+        type api_env_data = Array[env_data]
+
+        type response = _Api[api_env_data]
+      end
+    end
+
+
   end
 end

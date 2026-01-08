@@ -16,6 +16,7 @@ module Renv
       end
       puts data
       @api_key = data[:api_key]
+      @envs = Hash.new
     end
 
     private
@@ -38,18 +39,19 @@ module Renv
       uri = URI(url)
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = (uri.scheme == "https")
+      http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
       request = Net::HTTP::Post.new(uri)
-      headers["Content-Type"] ||= "Bearer #{@api_key}"
-      request["Content-Type"] ||= "application/json"
+      headers["Authorization"] ||= "Bearer #{@api_key}"
+      request["Content-Type"]  ||= "application/json"
       headers.each { |k, v| request[k] = v }
 
       request.body = body.to_json
       http.request(request)
     end
 
-    def raise_code_error(res)
-      unless res.code == "200"
+    def raise_code_error(res, code = "200")
+      unless res.code == code
         raise "HTTP Error #{res.code}: #{res.body}"
       end
     end
@@ -62,6 +64,12 @@ module Renv
 
     def branch(branch)
       res = http_get("/projects/#{@project_id}/branches?name=#{branch}")
+      raise_code_error(res)
+      JSON.parse(res.body)
+    end
+
+    def variable
+      res = http_get("/projects/#{@project_id}/branches/#{@branch}/envs")
       raise_code_error(res)
       JSON.parse(res.body)
     end
@@ -79,6 +87,37 @@ module Renv
       if @branch.nil? || @branch.empty?
         raise "Branch not found"
       end
+
+      variable = self.variable
+      variable["data"].each do |env|
+        key = env["key"]
+        value = env["value"]
+        @envs[key] = value
+      end
+    end
+
+    def set(key, value)
+      if key.nil? || value.nil?
+        raise ArgumentError, "Key and Value cannot be nil"
+      end
+
+      payload = {
+        :key   => key,
+        :value => value
+      }
+      res = http_post("/projects/#{@project_id}/branches/#{@branch}/envs", payload)
+      self.raise_code_error(res, "201")
+      @envs[key] = value
+
+      true
+    end
+
+    def get(key)
+      @envs[key]
+    end
+
+    def all
+      @envs
     end
   end
 end
