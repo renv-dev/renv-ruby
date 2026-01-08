@@ -8,9 +8,9 @@ Gem::Specification.new do |spec|
   spec.authors = ["tanahiro2010"]
   spec.email = ["herentongkegu087@gmail.com"]
 
-  spec.summary = "TODO: Write a short summary, because RubyGems requires one."
-  spec.description = "TODO: Write a longer description or delete this line."
-  spec.homepage = "TODO: Put your gem's website or public repo URL here."
+  spec.summary = "A Ruby client sdk for Renv API"
+  spec.description = "This gem provides a Ruby client sdk to interact with the Renv API for managing environment variables securely."
+  spec.homepage = "https://renv-web.vercel.app/"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 2.6.0"
 
